@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Travel Buddy Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #dbeafe;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.mobile {
+    width: 360px;
+    height: 640px;
+    background: #fff;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+}
+.header {
+    background: linear-gradient(135deg, #0077cc, #00c6ff);
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+}
+.content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-sizing: border-box; /* Prevents overflow */
+}
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    background: linear-gradient(135deg, #0077cc, #00c6ff);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.card {
+    background: #f1f5f9;
+    padding: 12px;
+    margin-top: 8px;
+    border-radius: 10px;
+}
+.nav {
+    display: flex;
+    justify-content: space-around;
+    background: #f8fafc;
+    padding: 12px 0;
+    border-top: 1px solid #ddd;
+}
+.nav div {
+    cursor: pointer;
+    font-size: 20px;
+}
+.screen { display: none; }
+.active { display: block; }
+img {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+.delete-btn {
+    background: #ef4444;
+    margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="mobile">
+
+<div class="header">🌍 Travel Buddy Pro</div>
+
+<div class="content">
+
+<div id="login" class="screen active">
+    <h3>Login</h3>
+    <input id="loginUser" placeholder="Username">
+    <input id="loginPass" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="showScreen('register')">Register</button>
+</div>
+
+<div id="register" class="screen">
+    <h3>Register</h3>
+    <input id="regUser" placeholder="Username">
+    <input id="regPass" type="password" placeholder="Password">
+    <button onclick="register()">Create Account</button>
+</div>
+
+<div id="home" class="screen">
+    <h3>Welcome 👋</h3>
+    <button onclick="showScreen('plan')">Plan Trip</button>
+    <button onclick="showScreen('saved')">Saved Trips</button>
+    <button onclick="showScreen('partner')">Partner</button>
+    <button onclick="showScreen('gallery')">Memories</button>
+</div>
+
+<div id="plan" class="screen">
+    <h3>Plan Your Next Adventure</h3>
+    <input id="destination" placeholder="Destination (e.g., Paris, Goa)">
+    <input id="budgetInput" type="number" placeholder="Budget (₹)">
+    <input id="daysInput" type="number" placeholder="Number of Days">
+
+    <button onclick="generatePlan()">Generate Plan</button>
+    <button onclick="resetForm()" style="background: #94a3b8;">Reset</button>
+
+    <div id="result"></div>
+    <div id="mapView"></div>
+</div>
+
+<div id="saved" class="screen">
+    <h3>Saved Trips ❤️</h3>
+    <div id="savedTrips"><p>No saved trips yet.</p></div>
+</div>
+
+<div id="partner" class="screen">
+    <h3>Partner Sync</h3>
+    <input id="partnerName" placeholder="Partner Name">
+    <input id="partnerPref" placeholder="Travel Preference (e.g., Beach)">
+    <button onclick="savePartner()">Generate Sync Code</button>
+
+    <input id="syncInput" placeholder="Enter Code Here" style="margin-top:20px;">
+    <button onclick="connectPartner()">Connect</button>
+
+    <div style="display:flex; gap:10px; margin-top:15px;">
+        <button onclick="vote('Beach')">🏖️ Beach</button>
+        <button onclick="vote('Trek')">⛰️ Trek</button>
+    </div>
+
+    <div id="voteResult"></div>
+    <div id="partnerData"></div>
+</div>
+
+<div id="gallery" class="screen">
+    <h3>Memories 📸</h3>
+    <input id="memoryInput" placeholder="Write a memory...">
+    <input type="file" id="imageInput">
+    <button onclick="addMemory()">Add Memory</button>
+    <div id="memoryList"></div>
+</div>
+
+</div>
+
+<div class="nav">
+    <div onclick="showScreen('home')" title="Home">🏠</div>
+    <div onclick="showScreen('plan')" title="Plan">🧳</div>
+    <div onclick="showScreen('saved')" title="Saved">❤️</div>
+    <div onclick="showScreen('partner')" title="Partner">👥</div>
+    <div onclick="showScreen('gallery')" title="Memories">📸</div>
+</div>
+
+</div>
+
+<script>
+let userData={}, savedTrips=[], partner={}, syncCode="", connected=false, voteChoice="", memories=[];
+
+// --- Navigation & Auth ---
+function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    if(id === 'saved') displaySaved();
+}
+
+function register(){
+    if(!regUser.value || !regPass.value) return alert("Fill both fields");
+    userData[regUser.value]=regPass.value;
+    alert("Account created! Please log in.");
+    showScreen("login");
+}
+
+function login(){
+    if(userData[loginUser.value]===loginPass.value) showScreen("home");
+    else alert("Invalid username or password");
+}
+
+// --- Partner logic ---
+function savePartner(){
+    partner.name=partnerName.value;
+    partner.pref=partnerPref.value;
+    syncCode=Math.floor(1000+Math.random()*9000);
+    partnerData.innerHTML=`<div class="card"><strong>${partner.name}</strong> prefers ${partner.pref}<br><br>Sync Code: <strong>${syncCode}</strong></div>`;
+}
+
+function connectPartner(){
+    connected=(syncInput.value == syncCode);
+    alert(connected ? "Partner Connected Successfully!" : "Wrong Code. Try again.");
+}
+
+function vote(c){
+    voteChoice=c;
+    voteResult.innerHTML=`<div class="card">Current Vibe: <strong>${c}</strong></div>`;
+}
+
+// --- Planning & Map logic ---
+function getPlacesByBudget(budget) {
+    // Dynamically returns activities based on the budget size
+    if (budget < 5000) {
+        return ["Free Walking Tour", "Local Street Markets", "Public Parks & Gardens", "Street Food Hopping", "Free Local Museums"];
+    } else if (budget < 20000) {
+        return ["Guided City Tour", "Standard Museums & Galleries", "Cafe Hopping", "Nature Reserve Trek", "Boutique Shopping"];
+    } else {
+        return ["Luxury Spa Day", "Fine Dining Experience", "Private Yacht/Car Tour", "Helicopter Ride", "Premium Resort Stay"];
+    }
+}
+
+function generatePlan(){
+    let dest=destination.value.trim();
+    let budget=parseInt(budgetInput.value);
+    let days=parseInt(daysInput.value);
+
+    if(!dest||isNaN(budget)||isNaN(days)){
+        result.innerHTML="<p style='color:red;'>Please fill all fields!</p>";
+        return;
+    }
+
+    let places = getPlacesByBudget(budget);
+    
+    // UI Builder for Plan
+    let html=`<h3>📍 ${dest.toUpperCase()}</h3><div class="card">💰 Budget: ₹${budget}</div>`;
+    if(voteChoice) html+=`<div class="card">✨ Partner Vibe: ${voteChoice}</div>`;
+
+    for(let i=0;i<days;i++){
+        let place = places[i % places.length]; // Loop through places if days > places array
+        html+=`<div class="card"><strong>Day ${i+1}:</strong> Explore ${place}</div>`;
+    }
+
+    // Save Button
+    html += `<button onclick="saveTrip('${dest}', ${budget}, ${days})" style="margin-top: 15px; background: #10b981;">💾 Save This Trip</button>`;
+    result.innerHTML=html;
+
+    // Real Map Integration (Google Maps embed)
+    mapView.innerHTML=`
+        <div class="card" style="padding:0; overflow:hidden; margin-top:15px;">
+            <iframe width="100%" height="200" style="border:0;" loading="lazy" allowfullscreen 
+            src="https://maps.google.com/maps?q=${encodeURIComponent(dest)}&output=embed"></iframe>
+        </div>`;
+}
+
+function resetForm(){
+    destination.value="";
+    budgetInput.value="";
+    daysInput.value="";
+    result.innerHTML="";
+    mapView.innerHTML="";
+}
+
+// --- Saving Logic ---
+function saveTrip(dest, budget, days){
+    let trip = { destination: dest, budget: budget, days: days };
+    savedTrips.push(trip);
+    alert("Trip Saved! ❤️ Go to Saved Trips to view.");
+}
+
+function displaySaved(){
+    let c=document.getElementById("savedTrips");
+    c.innerHTML="";
+    if(savedTrips.length === 0){
+        c.innerHTML = "<p>No saved trips yet. Start planning!</p>";
+        return;
+    }
+    savedTrips.forEach((t, i) => {
+        c.innerHTML+=`
+        <div class="card">
+            <h4 style="margin: 0 0 10px 0;">📍 ${t.destination.toUpperCase()}</h4>
+            <p style="margin: 5px 0;">⏱️ Duration: ${t.days} Days</p>
+            <p style="margin: 5px 0;">💰 Budget: ₹${t.budget}</p>
+            <button class="delete-btn" onclick="delTrip(${i})">Delete</button>
+        </div>`;
+    });
+}
+
+function delTrip(index){
+    savedTrips.splice(index, 1);
+    displaySaved(); // Refresh the list
+}
+
+// --- Memories logic ---
+function generateCaption(){
+    let arr=["Travel vibes ✨","Adventure time 🌍","Best moments ❤️", "Wanderlust ✈️"];
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function addMemory(){
+    let text=memoryInput.value;
+    let file=imageInput.files[0];
+    let reader=new FileReader();
+
+    if(file){
+        reader.onload=e=>{
+            memories.push({text:text, img:e.target.result, cap:generateCaption()});
+            displayMemories();
+        };
+        reader.readAsDataURL(file);
+    }else{
+        if(!text) return alert("Please add a description or image.");
+        memories.push({text:text, img:null, cap:generateCaption()});
+        displayMemories();
+    }
+
+    memoryInput.value="";
+    imageInput.value="";
+}
+
+function displayMemories(){
+    memoryList.innerHTML="";
+    memories.forEach((m,i)=>{
+        memoryList.innerHTML+=`
+        <div class="card">
+            ${m.img?`<img src="${m.img}">`:""}
+            <p><strong>${m.text}</strong></p>
+            <p style="color: #64748b; font-size: 14px;">${m.cap}</p>
+            <div style="display:flex; gap:10px;">
+                <button onclick="share('${m.cap} - ${m.text}')">Share</button>
+                <button class="delete-btn" style="margin-top:6px;" onclick="delMemory(${i})">Delete</button>
+            </div>
+        </div>`;
+    });
+}
+
+function delMemory(i){
+    memories.splice(i,1);
+    displayMemories();
+}
+
+function share(t){
+    window.open("https://wa.me/?text="+encodeURIComponent(t));
+}
+</script>
+
+</body>
+</html>
